@@ -64,6 +64,7 @@ type Options struct {
 	Interpolator Interpolator
 	Gravity      Gravity
 	Quality      int
+	OutputAs     ImageType
 }
 
 func init() {
@@ -270,7 +271,12 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 			debug("embedding with extend %d", o.Extend)
 			left := (o.Width - affinedWidth) / 2
 			top := (o.Height - affinedHeight) / 2
-			err := C.vips_embed_extend(affined, &canvased, C.int(left), C.int(top), C.int(o.Width), C.int(o.Height), C.int(o.Extend))
+			var err C.int
+			if o.OutputAs == PNG {
+				err = C.vips_embed_preserve_alpha(affined, &canvased, C.int(left), C.int(top), C.int(o.Width), C.int(o.Height))
+			} else {
+				err = C.vips_embed_extend(affined, &canvased, C.int(left), C.int(top), C.int(o.Width), C.int(o.Height), C.int(o.Extend))
+			}
 			if err != 0 {
 				return nil, resizeError()
 			}
@@ -293,7 +299,11 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	length := C.size_t(0)
 	ptr := C.malloc(C.size_t(len(buf)))
 
-	C.vips_jpegsave_custom(colourspaced, &ptr, &length, 1, C.int(o.Quality), 0)
+	if o.OutputAs == PNG {
+		C.vips_pngsave_custom(colourspaced, &ptr, &length)
+	} else {
+		C.vips_jpegsave_custom(colourspaced, &ptr, &length, 1, C.int(o.Quality), 0)
+	}
 	C.g_object_unref(C.gpointer(colourspaced))
 
 	// get back the buffer

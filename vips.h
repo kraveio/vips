@@ -51,6 +51,18 @@ vips_embed_extend(VipsImage *in, VipsImage **out, int left, int top, int width, 
 }
 
 int
+vips_embed_preserve_alpha(VipsImage *in, VipsImage **out, int left, int top, int width, int height)
+{
+	VipsArrayDouble *transparent;
+	transparent = vips_array_double_newv( 4, 0.0, 0.0, 0.0, 1.0);
+    int result;
+	result = vips_embed(in, out, left, top, width, height, "extend", VIPS_EXTEND_BACKGROUND, "background", transparent, NULL);
+	vips_area_unref( (VipsArea *) transparent );
+	return result;
+}
+
+
+int
 vips_colourspace_0(VipsImage *in, VipsImage **out, VipsInterpretation space)
 {
     return vips_colourspace(in, out, space, NULL);
@@ -66,4 +78,10 @@ int
 vips_jpegsave_custom(VipsImage *in, void **buf, size_t *len, int strip, int quality, int interlace)
 {
     return vips_jpegsave_buffer(in, buf, len, "strip", strip, "Q", quality, "optimize_coding", TRUE, "interlace", interlace, NULL);
+}
+
+int
+vips_pngsave_custom(VipsImage *in, void **buf, size_t *len)
+{
+    return vips_pngsave_buffer(in, buf, len, NULL);
 }
